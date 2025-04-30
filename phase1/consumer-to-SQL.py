@@ -42,6 +42,7 @@ class XactionConsumer:
         self.ledger = {}
         self.deposits = []
         self.withdrawals = []
+        self.consumer_balance = {}
 
     def store_transaction(self, message):
         with self.app.app_context():
@@ -89,6 +90,23 @@ class XactionConsumer:
         print(f"Std Dev Withdrawal: ${std_dev_withdrawal:.2f}")
         print("-------------------------")
 
+    def update_balance(self, transaction):
+        custid = transaction['custid']
+        amount = transaction['amt']
+        transaction_type = transaction['type'].lower()
+
+        if custid not in self.consumer_balance:
+            self.consumer_balance[custid] = 0
+
+        if transaction_type == 'dep':
+            self.consumer_balance[custid] += amount
+        elif transaction_type == 'wth':
+            self.consumer_balance[custid] -= amount
+        print(f"Current Balances (in-memory): {self.consumer_balance}")
+
+    # def limit_consumer(self, transaction):
+
+
     def handleMessages(self):
         for message in self.consumer:
             message = message.value
@@ -96,6 +114,7 @@ class XactionConsumer:
             self.ledger[message['custid']] = message
             self.store_transaction(message)
             self.update_summary(message)
+            self.update_balance(message)
 
 if __name__ == "__main__":
     app = create_app()
