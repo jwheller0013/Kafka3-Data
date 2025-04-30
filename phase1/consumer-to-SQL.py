@@ -4,6 +4,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from os import path
 from datetime import datetime
+import numpy as np
 
 db = SQLAlchemy()
 
@@ -39,6 +40,8 @@ class XactionConsumer:
             group_id='transaction-consumer-group-sqlite',
             value_deserializer=lambda m: loads(m.decode('ascii')))
         self.ledger = {}
+        self.deposits = []
+        self.withdrawals = []
 
     def store_transaction(self, message):
         with self.app.app_context():
@@ -56,6 +59,35 @@ class XactionConsumer:
             except Exception as e:
                 db.session.rollback()
                 print(f"Error storing transaction in DB: {e}")
+    
+    def update_summary(self, transaction):
+        if transaction['type'].lower() == 'dep':
+            self.deposits.append(transaction['amt'])
+        elif transaction['type'].lower() == 'wth':
+            self.withdrawals.append(transaction['amt'])
+        self.print_summary()
+
+    def print_summary(self):
+        if self.deposits:
+            mean_deposit = np.mean(self.deposits)
+            std_dev_deposit = np.std(self.deposits)
+        else:
+            mean_deposit = 0
+            std_dev_deposit = 0
+
+        if self.withdrawals:
+            mean_withdrawal = np.mean(self.withdrawals)
+            std_dev_withdrawal = np.std(self.withdrawals)
+        else:
+            mean_withdrawal = 0
+            std_dev_withdrawal = 0
+
+        print("\n--- Numerical Summary ---")
+        print(f"Mean Deposit: ${mean_deposit:.2f}")
+        print(f"Std Dev Deposit: ${std_dev_deposit:.2f}")
+        print(f"Mean Withdrawal: ${mean_withdrawal:.2f}")
+        print(f"Std Dev Withdrawal: ${std_dev_withdrawal:.2f}")
+        print("-------------------------")
 
     def handleMessages(self):
         for message in self.consumer:
@@ -63,6 +95,7 @@ class XactionConsumer:
             print('{} received'.format(message))
             self.ledger[message['custid']] = message
             self.store_transaction(message)
+            self.update_summary(message)
 
 if __name__ == "__main__":
     app = create_app()
