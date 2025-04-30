@@ -1,0 +1,1 @@
+cd phase1; python3 ./consumer-to-SQL.py
