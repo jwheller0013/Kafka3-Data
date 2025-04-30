@@ -105,6 +105,9 @@ class XactionConsumer:
         print(f"Current Balances (in-memory): {self.consumer_balance}")
 
     # def limit_consumer(self, transaction):
+        #need to keep a dict of consumers who are either -5000 > balance and/or > 5000
+        #pop off the ones not in that range from it
+        #print a running list of these users
 
 
     def handleMessages(self):
