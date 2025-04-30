@@ -39,24 +39,6 @@ class XactionConsumer:
             group_id='transaction-consumer-group-sqlite',
             value_deserializer=lambda m: loads(m.decode('ascii')))
         self.ledger = {}
-        self.custBalances = self.load_customer_balances()
-
-    def load_customer_balances(self):
-        balances = {}
-        with self.app.app_context():
-            try:
-                all_transactions = Transaction.query.all()
-                for transaction in all_transactions:
-                    custid = transaction.custid
-                    if custid not in balances:
-                        balances[custid] = 0
-                    if transaction.type == 'Dep':
-                        balances[custid] += transaction.amt
-                    elif transaction.type == 'Wth':
-                        balances[custid] -= transaction.amt
-            except Exception as e:
-                print(f"Error loading customer balances: {e}")
-        return balances
 
     def store_transaction(self, message):
         with self.app.app_context():
@@ -81,13 +63,6 @@ class XactionConsumer:
             print('{} received'.format(message))
             self.ledger[message['custid']] = message
             self.store_transaction(message)
-            if message['custid'] not in self.custBalances:
-                self.custBalances[message['custid']] = 0
-            if message['type'] == 'dep':
-                self.custBalances[message['custid']] += message['amt']
-            else:
-                self.custBalances[message['custid']] -= message['amt']
-            print(self.custBalances)
 
 if __name__ == "__main__":
     app = create_app()
