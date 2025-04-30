@@ -104,10 +104,16 @@ class XactionConsumer:
             self.consumer_balance[custid] -= amount
         print(f"Current Balances (in-memory): {self.consumer_balance}")
 
-    # def limit_consumer(self, transaction):
-        #need to keep a dict of consumers who are either -5000 > balance and/or > 5000
-        #pop off the ones not in that range from it
-        #print a running list of these users
+    def limit_consumer(self, transaction, lower_limit=-5000, upper_limit=5000):
+        exceeding_ids = []
+        custid = transaction['custid']
+        balance = self.consumer_balance.get(custid)
+        for custid, balance in self.consumer_balance.items():
+            if balance < lower_limit or balance > upper_limit:
+                exceeding_ids.append(custid)
+        print(f"\n--- Customers Exceeding Limit [${lower_limit}, ${upper_limit}] ---")
+        print(f"IDs: {exceeding_ids}")
+        print("------------------------------------------------------------------")
 
 
     def handleMessages(self):
@@ -118,6 +124,7 @@ class XactionConsumer:
             self.store_transaction(message)
             self.update_summary(message)
             self.update_balance(message)
+            self.limit_consumer(message)
 
 if __name__ == "__main__":
     app = create_app()
